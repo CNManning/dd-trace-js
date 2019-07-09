@@ -198,7 +198,16 @@ jobs:
         environment:
           - PLUGINS=connect
 
+  node-couchbase:
+    <<: *node-plugin-base
+    docker:
+      - image: node:8
+        environment:
+          - SERVICES=couchbase
+          - PLUGINS=couchbase
+      - image: couchbase/server-sandbox:6.0.1
   node-dns:
+
     <<: *node-plugin-base
     docker:
       - image: node:8
@@ -563,6 +572,7 @@ workflows:
       - node-bunyan
       - node-cassandra
       - node-connect
+      - node-couchbase
       - node-dns
       - node-elasticsearch
       - node-express
@@ -649,6 +659,7 @@ workflows:
       - node-bunyan
       - node-cassandra
       - node-connect
+      - node-couchbase
       - node-dns
       - node-elasticsearch
       - node-express
