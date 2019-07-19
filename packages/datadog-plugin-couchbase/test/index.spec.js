@@ -182,6 +182,7 @@ describe('Plugin', () => {
                 expect(span.meta).to.have.property('span.kind', 'client')
                 expect(span.meta).to.have.property('bucket', 'datadog-test')
                 expect(span.meta).to.have.property('ddoc', viewQuery.ddoc)
+                expect(span.meta).to.have.property('query.type', 'view')
               })
               .then(done)
               .catch(done)
