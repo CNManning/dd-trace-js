@@ -3,7 +3,6 @@
 const Tags = require('../../../ext/tags')
 const Kinds = require('../../../ext/kinds')
 const analyticsSampler = require('../../dd-trace/src/analytics_sampler')
-const tx = require('../../dd-trace/src/plugins/util/tx')
 
 function startQuerySpan (queryType, resource, tracer, config) {
   const childOf = tracer.scope().active()
