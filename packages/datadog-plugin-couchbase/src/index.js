@@ -24,12 +24,21 @@ function startQuerySpan (queryType, resource, tracer, config) {
 }
 
 function onRequestFinish (emitter, span) {
-  emitter.once('rows', () => {
+  const errorListener = (err) => {
     span.finish()
+    span.setTag(Tags.ERROR, err)
+  }
+  const rowsListener = () => {
+    span.finish()
+  }
+
+  emitter.once('rows', () => {
+    rowsListener()
+    emitter.removeListener('error', errorListener)
   })
   emitter.once('error', (err) => {
-    span.setTag(Tags.ERROR, err)
-    span.finish()
+    errorListener(err)
+    emitter.removeListener('rows', rowsListener)
   })
 }
 
