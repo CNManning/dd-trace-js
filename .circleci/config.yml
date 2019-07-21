@@ -205,9 +205,9 @@ jobs:
         environment:
           - SERVICES=couchbase
           - PLUGINS=couchbase
-      - image: rishabhdev/couchbase-server-sandbox:6.0.1
-  node-dns:
+      - image: rishabhdev/couchbase-server-sandbox:latest
 
+  node-dns:
     <<: *node-plugin-base
     docker:
       - image: node:8

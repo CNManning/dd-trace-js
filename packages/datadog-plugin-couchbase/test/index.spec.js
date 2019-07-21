@@ -13,7 +13,6 @@ describe('Plugin', () => {
   let CbasQuery
   let cluster
   let bucket
-  let bucketManager
   let platform
   let tracer
 
@@ -36,22 +35,10 @@ describe('Plugin', () => {
         })
 
         beforeEach(done => {
-          cluster = new couchbase.Cluster('couchbase://localhost/')
+          cluster = new couchbase.Cluster('couchbase://localhost')
           cluster.authenticate('Administrator', 'password')
           bucket = cluster.openBucket('datadog-test', (err) => {
-            if (err) done(err)
-
-            bucketManager = bucket.manager()
-            const map = `function (doc, meta) {
-                          if (doc.type && doc.type == 'landmark') {
-                            emit(doc.name, null)
-                          }
-                        }`
-            const ddocdata = { views: { by_name: { map } } }
-
-            bucketManager.upsertDesignDocument('datadoc', ddocdata, (err) => {
-              done(err)
-            })
+            done(err)
           })
         })
 
@@ -64,18 +51,8 @@ describe('Plugin', () => {
         })
 
         describe('queries on cluster', () => {
-          it('should handle N1ql queries', done => {
-            const query = `UPSERT INTO \`datadog-test\` ( KEY, VALUE )
-                            VALUES (
-                              "landmark_1",
-                              {
-                                "id": "1",
-                                "type": "landmark",
-                                "name": "La Tour Eiffel",
-                                "location": "France"
-                              }
-                            )`
-
+          it('should handle N1QL queries', done => {
+            const query = 'SELECT 1+1'
             const n1qlQuery = N1qlQuery.fromString(query)
 
             agent
@@ -146,7 +123,7 @@ describe('Plugin', () => {
         })
 
         describe('queries on buckets', () => {
-          it('should handle N1ql queries', done => {
+          it('should handle N1QL queries', done => {
             const query = 'SELECT 1+1'
             const n1qlQuery = N1qlQuery.fromString(query)
 
@@ -189,7 +166,6 @@ describe('Plugin', () => {
 
             bucket.query(viewQuery, (err, rows, meta) => {
               if (err) done(err)
-              expect(rows.length).to.not.equal(0)
             })
           })
         })
