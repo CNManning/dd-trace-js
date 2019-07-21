@@ -98,7 +98,7 @@ describe('Plugin', () => {
           })
 
           it('should handle cbas queries', done => {
-            const query = 'SELECT * FROM airlines'
+            const query = 'SELECT * FROM datatest'
             const cbasQuery = CbasQuery.fromString(query)
 
             agent

@@ -13,8 +13,12 @@ function waitForCouchbase () {
         method: 'POST',
         url: ftsEndpoint,
         data: {
-          query: {
-            query: 'eiffel'
+          'ctl': {
+            'timeout': 75000
+          },
+          'indexName': 'test',
+          'query': {
+            'query': 'eiffel'
           }
         },
         auth: {
