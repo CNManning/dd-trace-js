@@ -94,7 +94,6 @@ describe('Plugin', () => {
 
             cluster.query(searchQuery, (err, rows, meta) => {
               if (err) done(err)
-              expect(rows.length).to.not.equal(0)
             })
           })
 
