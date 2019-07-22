@@ -68,7 +68,7 @@ function createWrapViewQuery (tracer, config) {
       const bucket = this.name
       const span = startQuerySpan('view', bucket, viewName, tracer, config)
 
-      span.addTags('ddoc', ddoc)
+      span.setTag('ddoc', ddoc)
       onRequestFinish(arguments[_viewReq.length - 1], span)
 
       return scope.bind(_viewReq, span).apply(this, arguments)
