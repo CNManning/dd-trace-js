@@ -4,7 +4,7 @@ const Tags = require('../../../ext/tags')
 const Kinds = require('../../../ext/kinds')
 const analyticsSampler = require('../../dd-trace/src/analytics_sampler')
 
-function startQuerySpan (queryType, resource, tracer, config) {
+function startQuerySpan (queryType, bucket, resource, tracer, config) {
   const childOf = tracer.scope().active()
   const span = tracer.startSpan(`couchbase.call`, {
     childOf,
@@ -15,7 +15,8 @@ function startQuerySpan (queryType, resource, tracer, config) {
       'service.name': config.service || `${tracer._service}-couchbase`,
       'resource.name': resource,
       'query.type': queryType,
-      [Tags.SPAN_KIND]: Kinds.CLIENT
+      [Tags.SPAN_KIND]: Kinds.CLIENT,
+      bucket
     }
   })
 
@@ -48,13 +49,9 @@ function createWrapN1qlQuery (tracer, config) {
       const scope = tracer.scope()
       const query = q.statement
       const bucket = this.name
-      const span = startQuerySpan('n1ql', query, tracer, config)
+      const span = startQuerySpan('n1ql', bucket, query, tracer, config)
 
-      span.addTags({
-        'cluster.host': host,
-        bucket
-      })
-
+      span.setTag('cluster.host', host)
       onRequestFinish(emitter, span)
 
       return scope.bind(_n1qlReq, span).apply(this, arguments)
@@ -67,16 +64,11 @@ function createWrapViewQuery (tracer, config) {
     return function queryWithTrace () {
       const ddoc = arguments[1]
       const viewName = arguments[2]
-
       const scope = tracer.scope()
-      const span = startQuerySpan('view', viewName, tracer, config)
-
       const bucket = this.name
-      span.addTags({
-        ddoc,
-        bucket
-      })
+      const span = startQuerySpan('view', bucket, viewName, tracer, config)
 
+      span.addTags('ddoc', ddoc)
       onRequestFinish(arguments[_viewReq.length - 1], span)
 
       return scope.bind(_viewReq, span).apply(this, arguments)
@@ -89,10 +81,8 @@ function createWrapFtsQuery (tracer, config) {
     return function queryWithTrace (q, emitter) {
       const scope = tracer.scope()
       const index = q.data.indexName
-      const span = startQuerySpan('search', index, tracer, config)
-
       const bucket = this.name
-      span.setTag('bucket', bucket)
+      const span = startQuerySpan('search', bucket, index, tracer, config)
 
       onRequestFinish(emitter, span)
 
@@ -107,13 +97,9 @@ function createWrapCbasQuery (tracer, config) {
       const scope = tracer.scope()
       const query = q.statement
       const bucket = this.name
-      const span = startQuerySpan('cbas', query, tracer, config)
+      const span = startQuerySpan('cbas', bucket, query, tracer, config)
 
-      span.addTags({
-        'cbas.host': host,
-        bucket
-      })
-
+      span.addTags('cbas.host', host)
       onRequestFinish(emitter, span)
 
       return scope.bind(_cbasReq, span).apply(this, arguments)
