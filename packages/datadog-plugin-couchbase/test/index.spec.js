@@ -18,7 +18,7 @@ describe('Plugin', () => {
   describe('couchbase', () => {
     withVersions(plugin, 'couchbase', version => {
       beforeEach(() => {
-        tracer = require('../../dd-trace')
+        tracer = global.tracer = require('../../dd-trace')
       })
 
       describe('without configuration', () => {
@@ -52,7 +52,7 @@ describe('Plugin', () => {
           if (process.env.DD_CONTEXT_PROPAGATION === 'false') return done()
           const query = 'SELECT 1+1'
           const n1qlQuery = N1qlQuery.fromString(query)
-          const span = tracer.startSpan('query-cb-test')
+          const span = tracer.startSpan('query.cb.test')
 
           tracer.scope().activate(span, () => {
             cluster.query(n1qlQuery, (err) => {
@@ -68,7 +68,7 @@ describe('Plugin', () => {
           const n1qlQuery = N1qlQuery.fromString(query)
           const span = tracer.startSpan('query-listener-test')
 
-          const emitter = cluster.query(n1qlQuery, () => {})
+          const emitter = cluster.query(n1qlQuery, () => { })
 
           tracer.scope().activate(span, () => {
             emitter.on('rows', () => {

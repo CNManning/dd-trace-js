@@ -26,8 +26,8 @@ function startQuerySpan (queryType, resource, tracer, config) {
 
 function onRequestFinish (emitter, span) {
   const errorListener = (err) => {
-    span.finish()
     span.setTag(Tags.ERROR, err)
+    span.finish()
   }
   const rowsListener = () => {
     span.finish()
@@ -43,6 +43,17 @@ function onRequestFinish (emitter, span) {
   })
 }
 
+function createWrapMaybeInvoke (tracer) {
+  return function wrapMaybeInvoke (_maybeInvoke) {
+    return function maybeInvokeWithTrace (fn, args) {
+      const scope = tracer.scope()
+
+      fn = scope.bind(fn)
+      return _maybeInvoke.call(this, fn, args)
+    }
+  }
+}
+
 function createWrapN1qlQuery (tracer, config) {
   return function wrapN1qlQuery (_n1ql) {
     return function n1qlQueryWithTrace (query) {
@@ -55,7 +66,7 @@ function createWrapN1qlQuery (tracer, config) {
       const req = scope.bind(_n1ql, span).apply(this, arguments)
       onRequestFinish(req, span)
 
-      return req
+      return scope.bind(req)
     }
   }
 }
@@ -90,7 +101,7 @@ function createWrapViewQuery (tracer, config) {
       const req = scope.bind(_view, span).apply(this, arguments)
       onRequestFinish(req, span)
 
-      return req
+      return scope.bind(req)
     }
   }
 }
@@ -121,7 +132,7 @@ function createWrapFtsQuery (tracer, config) {
       const req = scope.bind(_fts, span).apply(this, arguments)
       onRequestFinish(req, span)
 
-      return req
+      return scope.bind(req)
     }
   }
 }
@@ -152,7 +163,7 @@ function createWrapCbasQuery (tracer, config) {
       const req = scope.bind(_cbas, span).apply(this, arguments)
       onRequestFinish(req, span)
 
-      return req
+      return scope.bind(req)
     }
   }
 }
@@ -184,9 +195,11 @@ function createWrapOpenBucket (tracer) {
 module.exports = [
   {
     name: 'couchbase',
-    versions: ['>=2.2.0'],
+    versions: ['>=2.4.2'],
     file: 'lib/bucket.js',
     patch (Bucket, tracer, config) {
+      this.wrap(Bucket.prototype, '_maybeInvoke', createWrapMaybeInvoke(tracer, config))
+
       this.wrap(Bucket.prototype, '_n1ql', createWrapN1qlQuery(tracer, config))
       this.wrap(Bucket.prototype, '_view', createWrapViewQuery(tracer, config))
       this.wrap(Bucket.prototype, '_fts', createWrapFtsQuery(tracer, config))
@@ -198,6 +211,8 @@ module.exports = [
       this.wrap(Bucket.prototype, '_cbasReq', createWrapCbasRequest(tracer))
     },
     unpatch (Bucket) {
+      this.unwrap(Bucket.prototype, '_maybeInvoke')
+
       this.unwrap(Bucket.prototype, '_n1ql')
       this.unwrap(Bucket.prototype, '_view')
       this.unwrap(Bucket.prototype, '_fts')
@@ -211,10 +226,11 @@ module.exports = [
   },
   {
     name: 'couchbase',
-    versions: ['>=2.2.0'],
+    versions: ['>=2.4.2'],
     file: 'lib/cluster.js',
     patch (Cluster, tracer, config) {
       this.wrap(Cluster.prototype, 'openBucket', createWrapOpenBucket(tracer, config))
+      this.wrap(Cluster.prototype, '_maybeInvoke', createWrapMaybeInvoke(tracer, config))
 
       this.wrap(Cluster.prototype, '_n1ql', createWrapN1qlQuery(tracer, config))
       this.wrap(Cluster.prototype, '_fts', createWrapFtsQuery(tracer, config))
@@ -222,6 +238,7 @@ module.exports = [
     },
     unpatch (Cluster) {
       this.unwrap(Cluster.prototype, 'openBucket')
+      this.unwrap(Cluster.prototype, '_maybeInvoke')
 
       this.unwrap(Cluster.prototype, '_n1ql')
       this.unwrap(Cluster.prototype, '_fts')
