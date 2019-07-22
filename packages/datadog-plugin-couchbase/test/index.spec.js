@@ -52,7 +52,7 @@ describe('Plugin', () => {
           if (process.env.DD_CONTEXT_PROPAGATION === 'false') return done()
           const query = 'SELECT 1+1'
           const n1qlQuery = N1qlQuery.fromString(query)
-          const span = tracer.startSpan('query.cb.test')
+          const span = tracer.startSpan('test.query.cb')
 
           tracer.scope().activate(span, () => {
             cluster.query(n1qlQuery, (err) => {
@@ -66,7 +66,7 @@ describe('Plugin', () => {
           if (process.env.DD_CONTEXT_PROPAGATION === 'false') return done()
           const query = 'SELECT 1+1'
           const n1qlQuery = N1qlQuery.fromString(query)
-          const span = tracer.startSpan('query-listener-test')
+          const span = tracer.startSpan('test.query.listener')
 
           const emitter = cluster.query(n1qlQuery, () => { })
 
