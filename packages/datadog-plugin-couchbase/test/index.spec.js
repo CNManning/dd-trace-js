@@ -13,13 +13,11 @@ describe('Plugin', () => {
   let CbasQuery
   let cluster
   let bucket
-  let platform
   let tracer
 
   describe('couchbase', () => {
     withVersions(plugin, 'couchbase', version => {
       beforeEach(() => {
-        platform = require('../../dd-trace/src/platform')
         tracer = require('../../dd-trace')
       })
 
@@ -50,6 +48,51 @@ describe('Plugin', () => {
           return agent.close()
         })
 
+        it('should run the Query callback in the parent context', done => {
+          if (process.env.DD_CONTEXT_PROPAGATION === 'false') return done()
+          const query = 'SELECT 1+1'
+          const n1qlQuery = N1qlQuery.fromString(query)
+          const span = tracer.startSpan('query-cb-test')
+
+          tracer.scope().activate(span, () => {
+            cluster.query(n1qlQuery, (err) => {
+              expect(tracer.scope().active()).to.equal(span)
+              done(err)
+            })
+          })
+        })
+
+        it('should run the Query event listener in the parent context', done => {
+          if (process.env.DD_CONTEXT_PROPAGATION === 'false') return done()
+          const query = 'SELECT 1+1'
+          const n1qlQuery = N1qlQuery.fromString(query)
+          const span = tracer.startSpan('query-listener-test')
+
+          const emitter = cluster.query(n1qlQuery, () => {})
+
+          tracer.scope().activate(span, () => {
+            emitter.on('rows', () => {
+              expect(tracer.scope().active()).to.equal(span)
+              done()
+            })
+          })
+        })
+
+        it('should run the Bucket event listener in the parent context', done => {
+          if (process.env.DD_CONTEXT_PROPAGATION === 'false') return done()
+          bucket.disconnect()
+          const span = tracer.startSpan('test')
+
+          bucket = cluster.openBucket('datadog-test', () => {})
+
+          tracer.scope().activate(span, () => {
+            bucket.on('connect', () => {
+              expect(tracer.scope().active()).to.equal(span)
+              done()
+            })
+          })
+        })
+
         describe('queries on cluster', () => {
           it('should handle N1QL queries', done => {
             const query = 'SELECT 1+1'
@@ -69,7 +112,7 @@ describe('Plugin', () => {
               .then(done)
               .catch(done)
 
-            cluster.query(n1qlQuery, (err, rows, meta) => {
+            cluster.query(n1qlQuery, (err) => {
               if (err) done(err)
             })
           })
@@ -92,7 +135,7 @@ describe('Plugin', () => {
               .then(done)
               .catch(done)
 
-            cluster.query(searchQuery, (err, rows, meta) => {
+            cluster.query(searchQuery, (err) => {
               if (err) done(err)
             })
           })
@@ -115,7 +158,7 @@ describe('Plugin', () => {
               .then(done)
               .catch(done)
 
-            cluster.query(cbasQuery, (err, rows, meta) => {
+            cluster.query(cbasQuery, (err) => {
               if (err) done(err)
             })
           })
@@ -140,7 +183,7 @@ describe('Plugin', () => {
               .then(done)
               .catch(done)
 
-            cluster.query(n1qlQuery, (err, rows, meta) => {
+            cluster.query(n1qlQuery, (err) => {
               if (err) done(err)
             })
           })
@@ -163,7 +206,7 @@ describe('Plugin', () => {
               .then(done)
               .catch(done)
 
-            bucket.query(viewQuery, (err, rows, meta) => {
+            bucket.query(viewQuery, (err) => {
               if (err) done(err)
             })
           })
